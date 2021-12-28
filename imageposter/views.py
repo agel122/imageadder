@@ -1,7 +1,12 @@
 import hashlib
 
+from PIL import Image
+import io
+
 from django.views.generic import ListView, CreateView
 from django.urls import reverse_lazy
+from django.core.files.base import ContentFile
+
 
 from rest_framework import viewsets
 from rest_framework.views import APIView
@@ -40,11 +45,21 @@ class AddPictureApi(CreateAPIView):
         height = request.data.get("height")
         name = request.data.get("name")
         file = request.data.get("file")
+
+        file_to_save = io.BytesIO()
+        image = Image.open(file)
+        image_resized = image.resize((int(width), int(height)))
+
         hash_name = hashlib.md5(name.encode()).hexdigest()
         new_filename = f'{hash_name}_{width}x{height}'
+        name_to_save = new_filename + '.png'
+        image_resized.save(file_to_save, 'png')
+        file_to_save.seek(0)
+        django_friendly_file = ContentFile(file_to_save.read(), name_to_save)
+
         serializer = PictureSerializer(data={
             'title': new_filename,
-            'cover': file,
+            'cover': django_friendly_file,
         })
         if serializer.is_valid():
             serializer.save()
