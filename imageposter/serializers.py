@@ -10,10 +10,7 @@ class PictureSerializer(serializers.ModelSerializer):
 
 class PictureApiSerializer(serializers.Serializer):
     width = serializers.IntegerField()
-    height = serializers.IntegerField()
-    name = serializers.CharField()
+    height = serializers.IntegerField(required=False, default=None)
     file = serializers.FileField()
 
-    def create(self, validated_data):
-        return PostedPicture.objects.create(**validated_data)
 

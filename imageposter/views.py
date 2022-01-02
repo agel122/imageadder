@@ -1,15 +1,7 @@
-import hashlib
-
-# from PIL import Image
-# import io
-
 from django.views.generic import ListView, CreateView
 from django.urls import reverse_lazy
-# from django.core.files.base import ContentFile
-
 
 from rest_framework import viewsets
-from rest_framework.views import APIView
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -19,7 +11,7 @@ from .models import PostedPicture
 from .forms import PostImage
 from .serializers import PictureSerializer, PictureApiSerializer
 
-from rename_resize import resizer
+from rename_resize.resizer import resize_rename
 
 
 class HomePageView(ListView):
@@ -44,31 +36,51 @@ class AddPictureApi(CreateAPIView):
 
     def post(self, request, *args, **kwargs):
         width = request.data.get("width")
-        height = request.data.get("height")
-        name = request.data.get("name")
+        if request.data.get("height"):
+            height = request.data.get("height")
+        else:
+            height = None
         file = request.data.get("file")
-        name_to_hash = file.name.split('.')[0]
-        file_to_save = io.BytesIO()
-        image = Image.open(file)
-        image_resized = image.resize((int(width), int(height)))
-
-        hash_name = hashlib.md5(name_to_hash.encode()).hexdigest()
-        new_filename = f'{hash_name}_{width}x{height}'
-        name_to_save = new_filename + '.png'
-        image_resized.save(file_to_save, 'png')
-        file_to_save.seek(0)
-        django_friendly_file = ContentFile(file_to_save.read(), name_to_save)
+        result = resize_rename(file, width, height)
 
         serializer = PictureSerializer(data={
-            'title': new_filename,
-            'cover': django_friendly_file,
+            'title': result['name'],
+            'cover': result['file'],
         })
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            if not PostedPicture.objects.filter(title=result['name']):
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                serializer = PictureSerializer(PostedPicture.objects.get(title=result['name']))
+                return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class AddPictureApi1(CreateAPIView):
+    serializer_class = PictureApiSerializer
+
+    def post(self, request, *args, **kwargs):
+        width = request.data.get("width")
+        if request.data.get("height"):
+            height = request.data.get("height")
+        else:
+            height = None
+        file = request.data.get("file")
+        result = resize_rename(file, width, height)
+
+        serializer = PictureSerializer(data={
+            'title': result['name'],
+            'cover': result['file'],
+        })
+        if serializer.is_valid():
+            if not PostedPicture.objects.filter(title=result['name']):
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                serializer = PictureSerializer(PostedPicture.objects.get(title=result['name']))
+                return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
