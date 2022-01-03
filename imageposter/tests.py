@@ -100,6 +100,21 @@ class MainRestApi(APITestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data["title"], self.name_to_save)
 
+    @override_settings(MEDIA_ROOT=tempfile.TemporaryDirectory(prefix='mediatest').name)
+    def test_already_posted(self):
+        PostedPicture.objects.create(
+            title=f'{self.hash_name}_100x100.png',
+            cover=create_image_file1(),
+        )
+        response = self.client.post(reverse('api'), {
+            'width': 100,
+            'file': create_image_file1(),
+        })
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(response.data["title"], f'{self.hash_name}_100x100.png')
+
+
+
 
 
 
