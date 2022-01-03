@@ -79,7 +79,8 @@ class AddPictureApi1(CreateAPIView):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 serializer = PictureSerializer(PostedPicture.objects.get(title=result['name']))
-                return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+                return Response({'url_to_file': PostedPicture.objects.get(title=result['name']).cover.url},
+                                status=status.HTTP_202_ACCEPTED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
