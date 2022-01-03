@@ -83,6 +83,23 @@ class TestFuncRenameResize(TestCase):
         self.assertEqual(self.resized_image2['name'], self.name_to_save)
 
 
+class MainRestApi(APITestCase):
+    # @override_settings(MEDIA_ROOT=tempfile.TemporaryDirectory(prefix='mediatest').name)
+    def setUp(self):
+        self.name = 'test.png'
+        self.name_to_hash = self.name.split('.')[0]
+        self.hash_name = hashlib.md5(self.name_to_hash.encode()).hexdigest()
+        self.name_to_save = f'{self.hash_name}_200x200.png'
+
+    @override_settings(MEDIA_ROOT=tempfile.TemporaryDirectory(prefix='mediatest').name)
+    def test_post(self):
+        response = self.client.post(reverse('api'), {
+            'width': 200,
+            'file': create_image_file1(),
+        })
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["title"], self.name_to_save)
+
 
 
 
