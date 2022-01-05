@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 from django.views.generic import ListView, CreateView
 from django.urls import reverse_lazy
 
@@ -50,9 +53,11 @@ class AddPictureApi(CreateAPIView):
         if serializer.is_valid():
             if not PostedPicture.objects.filter(title=result['name']):
                 serializer.save()
+                logger.info(f'{file.name} uploaded with widht={width}, {result["name"]}. Image created and requested')
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 serializer = PictureSerializer(PostedPicture.objects.get(title=result['name']))
+                logger.info(f'{file.name} with widht={width} already exists as {result["name"]}. Image requested')
                 return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
